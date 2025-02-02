@@ -339,19 +339,19 @@
             }
         }
 
-        function updateAllDayTimer(elapsed) {
-            state.timers.allDayProgress -= elapsed;
-            if(state.timers.allDayProgress < 0) {
-                state.timers.allDayProgress += state.lunarData.ALL_DAY_SECONDS;
-            }
-        }
+function updateAllDayTimer(elapsed) {
+    state.timers.allDayProgress -= elapsed;
+    if(state.timers.allDayProgress < 0) {
+        state.timers.allDayProgress += DEFAULTS.ALL_DAY_SECONDS; // Используем дефолтную длительность
+    }
+}
 
-        function updateLunarTimer(elapsed) {
-            state.timers.lunarCycleProgress -= elapsed;
-            if(state.timers.lunarCycleProgress < 0) {
-                state.timers.lunarCycleProgress += state.lunarData.LUNAR_CYCLE_SECONDS;
-            }
-        }
+function updateLunarTimer(elapsed) {
+    state.timers.lunarCycleProgress -= elapsed;
+    if(state.timers.lunarCycleProgress < 0) {
+        state.timers.lunarCycleProgress += DEFAULTS.LUNAR_CYCLE_SECONDS; // Используем дефолтную длительность
+    }
+}
 
 function updateUI() {
     const isSolar = state.calendar_mode === "solar";
@@ -369,13 +369,12 @@ function updateUI() {
         rings.minutes.circumference * (1 - state.timers.minutes / 60);
 
     // День/ночь
-    const allDayProgress = state.timers.allDayProgress / state.lunarData.ALL_DAY_SECONDS;
-    rings.hours.allDay.style.strokeDashoffset =
-        rings.hours.circumference * (1 - allDayProgress);
+const allDayProgress = state.timers.allDayProgress / DEFAULTS.ALL_DAY_SECONDS;
+rings.hours.allDay.style.strokeDashoffset = rings.hours.circumference * (1 - allDayProgress);
 
     // MOON_BELOW обновляется синхронно с ALL_DAY
     let moonBelowProgress;
-    const moonBelowRatio = state.lunarData.MOON_BELOW_SECONDS / state.lunarData.ALL_DAY_SECONDS;
+    const moonBelowRatio = state.lunarData.MOON_BELOW_SECONDS / DEFAULTS.ALL_DAY_SECONDS;
 
     if (state.timers.allDayProgress > state.lunarData.MOON_BELOW_SECONDS) {
         // Показываем полный круг moonBelow
@@ -389,13 +388,12 @@ function updateUI() {
         rings.hours.circumference * (1 - moonBelowProgress);
 
     // Лунный цикл
-    const lunarProgress = state.timers.lunarCycleProgress / state.lunarData.LUNAR_CYCLE_SECONDS;
-    rings.lunar.lunarCycle.style.strokeDashoffset =
-        rings.lunar.circumference * (1 - lunarProgress);
+const lunarProgress = state.timers.lunarCycleProgress / DEFAULTS.LUNAR_CYCLE_SECONDS;
+rings.lunar.lunarCycle.style.strokeDashoffset = rings.lunar.circumference * (1 - lunarProgress);
 
     // FULL_TO_NEW обновляется синхронно с LUNAR_CYCLE
     let fullToNewProgress;
-    const fullToNewRatio = state.lunarData.FULL_TO_NEW_SECONDS / state.lunarData.LUNAR_CYCLE_SECONDS;
+const fullToNewRatio = state.lunarData.FULL_TO_NEW_SECONDS / DEFAULTS.LUNAR_CYCLE_SECONDS;
 
     if (state.timers.lunarCycleProgress > state.lunarData.FULL_TO_NEW_SECONDS) {
         // Показываем часть круга согласно пропорции
