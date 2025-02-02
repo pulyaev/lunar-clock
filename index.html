@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        @media (max-width: 360px) {
+    .container {
+        transform: scale(0.9);
+    }
+    .coordinates-input {
+        width: 160px;
+        font-size: 13px;
+    }
+}
+
+@media (max-height: 600px) {
+    body {
+        min-height: 90vh;
+    }
+    .coordinates-container {
+        bottom: -60px;
+    }
+}
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #1c1c1e;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            line-height: 1.5;
+            z-index: 2;
+        }
+
+        .progress-ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: rotate(-90deg);
+        }
+
+        .background {
+            fill: none;
+            stroke: #222;
+            stroke-width: 18;
+        }
+
+        .progress {
+            fill: none;
+            stroke-width: 18;
+            transition: stroke-dashoffset 0.5s ease-out;
+        }
+
+        .core-progress { stroke: #b00007; }
+        .inner-progress { stroke: #001df8; }
+        .all-day-progress { stroke: #137f36; }
+        .moon-below-progress { stroke: #1e522f; }
+        .lunar-cycle-progress { stroke: #4169e1; }
+        .full-to-new-progress { stroke: #374c78; }
+
+        .divider {
+            stroke: rgba(255,255,255,0.2);
+            stroke-width: 2;
+        }
+
+        .coordinates-container {
+            position: absolute;
+            bottom: -80px;
+            width: 100%;
+            text-align: center;
+            color: white;
+        }
+
+        .coordinates-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #2c2c2e;
+            border: 2px solid #3a3a3c;
+        }
+
+        .coordinates-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 14px;
+            width: 180px;
+            text-align: center;
+        }
+
+        .edit-button {
+            background: none;
+            border: none;
+            color: #8b5cf6;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="progress-text">29 23:59:59</div>
+        <div class="coordinates-container">
+            <div class="coordinates-box">
+                <input type="text" class="coordinates-input" value="55.7558, 37.6176" />
+                <button class="edit-button">✏️</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DEFAULT_COORDS = { lat: 55.7558, lon: 37.6176 };
+        const SOLAR_YEAR_SECONDS = 31556926; // 365.2422 дней
+        const DEFAULT_CALENDAR_MODE = "lunar";
+        const API_URL = 'https://moon.puliaev.com/lunar-info';
+        const TIME_MULTIPLIER = 10;
+
+        const DEFAULTS = {
+            LUNAR_CYCLE_SECONDS: 2548800,
+            FULL_TO_NEW_SECONDS: 1253800,
+            ALL_DAY_SECONDS: 86400,
+            MOON_BELOW_SECONDS: 57600,
+            SOLAR_DAY_SECONDS: 86400,
+            SUN_BELOW_HORIZON_SECONDS: 28800,
+            SOLAR_CYCLE_SECONDS: SOLAR_YEAR_SECONDS,
+            AUTUMN_TO_WINTER_SECONDS: 7862400,
+            SUMMER_TO_WINTER_SECONDS: 15724800,
+            SPRING_TO_WINTER_SECONDS: 23587200,
+            CALENDAR_MODE: DEFAULT_CALENDAR_MODE
+        };
+
+        let state = {
+            coords: DEFAULT_COORDS,
+            isEditing: false,
+            lastUpdate: Date.now(),
+            isFetching: false,
+            errorCount: 0,
+            maxRetries: 3,
+            lunarData: { ...DEFAULTS },
+            timers: {
+                seconds: 59,
+                minutes: 59,
+                hours: 23,
+                allDayProgress: DEFAULTS.ALL_DAY_SECONDS,
+                lunarCycleProgress: DEFAULTS.LUNAR_CYCLE_SECONDS
+            },
+            user_id: null,
+            calendar_mode: DEFAULT_CALENDAR_MODE,
+            solarData: {
+                SOLAR_DAY_SECONDS: DEFAULTS.SOLAR_DAY_SECONDS,
+                SUN_BELOW_HORIZON_SECONDS: DEFAULTS.SUN_BELOW_HORIZON_SECONDS,
+                SOLAR_CYCLE_SECONDS: SOLAR_YEAR_SECONDS,
+                AUTUMN_TO_WINTER_SECONDS: 7862400,
+                SUMMER_TO_WINTER_SECONDS: 15724800,
+                SPRING_TO_WINTER_SECONDS: 23587200}
+        };
+
+        const rings = {
+            seconds: createProgressRing(65, 'core-progress', 60),
+            minutes: createProgressRing(90, 'inner-progress', 60),
+            hours: createHoursProgressRing(115),
+            lunar: createLunarProgressRing(140)
+        };
+        Telegram.WebApp.ready();
+        const initData = Telegram.WebApp.initDataUnsafe;
+        state.user_id = initData.user?.id || null;
+
+        function createProgressRing(radius, className, segments) {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("class", "progress-ring");
+            svg.setAttribute("width", "300");
+            svg.setAttribute("height", "300");
+
+            const background = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            background.setAttribute("cx", "150");
+            background.setAttribute("cy", "150");
+            background.setAttribute("r", radius.toString());
+            background.setAttribute("class", "background");
+            svg.appendChild(background);
+
+            const circumference = 2 * Math.PI * radius;
+            const progress = createProgressCircle(radius, className, circumference);
+            svg.appendChild(progress);
+
+            addDividers(svg, radius, segments);
+            document.querySelector('.container').appendChild(svg);
+
+            return { element: progress, circumference };
+        }
+
+        function createHoursProgressRing(radius) {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("class", "progress-ring");
+            svg.setAttribute("width", "300");
+            svg.setAttribute("height", "300");
+
+            const background = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            background.setAttribute("cx", "150");
+            background.setAttribute("cy", "150");
+            background.setAttribute("r", radius.toString());
+            background.setAttribute("class", "background");
+            svg.appendChild(background);
+
+            const circumference = 2 * Math.PI * radius;
+            const allDay = createProgressCircle(radius, 'all-day-progress', circumference);
+            const moonBelow = createProgressCircle(radius, 'moon-below-progress', circumference);
+
+            svg.appendChild(allDay);
+            svg.appendChild(moonBelow);
+
+            addDividers(svg, radius, 24);
+            document.querySelector('.container').appendChild(svg);
+
+            return { allDay, moonBelow, circumference };
+        }
+
+        function createLunarProgressRing(radius) {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("class", "progress-ring");
+            svg.setAttribute("width", "300");
+            svg.setAttribute("height", "300");
+
+            const background = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            background.setAttribute("cx", "150");
+            background.setAttribute("cy", "150");
+            background.setAttribute("r", radius.toString());
+            background.setAttribute("class", "background");
+            svg.appendChild(background);
+
+            const circumference = 2 * Math.PI * radius;
+            const lunarCycle = createProgressCircle(radius, 'lunar-cycle-progress', circumference);
+            const fullToNew = createProgressCircle(radius, 'full-to-new-progress', circumference);
+
+            svg.appendChild(lunarCycle);
+            svg.appendChild(fullToNew);
+
+            addLunarDividers(svg, radius);
+            document.querySelector('.container').appendChild(svg);
+
+            return { lunarCycle, fullToNew, circumference };
+        }
+
+        function createProgressCircle(radius, className, circumference) {
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", "150");
+            circle.setAttribute("cy", "150");
+            circle.setAttribute("r", radius.toString());
+            circle.setAttribute("class", `progress ${className}`);
+            circle.style.strokeDasharray = circumference;
+            circle.style.strokeDashoffset = 0;
+            return circle;
+        }
+
+        function addDividers(svg, radius, segments) {
+            const angleStep = 360 / segments;
+            for(let i = 0; i < segments; i++) {
+                const angle = i * angleStep;
+                const divider = createDivider(radius, angle, 20);
+                svg.appendChild(divider);
+            }
+        }
+
+        function addLunarDividers(svg, radius) {
+            const segments = 29;
+            const segmentAngle = 360 / segments;
+            const gapAngle = segmentAngle / 4;
+            let angle = 360 - gapAngle/2;
+
+            for(let i = 0; i < 32; i++) {
+                const divider = createDivider(radius, angle, 20);
+                svg.appendChild(divider);
+                angle -= (i+1) % 8 === 0 ? gapAngle : segmentAngle;
+            }
+        }
+
+        function createDivider(radius, angle, length) {
+            const rad = (angle - 90) * Math.PI / 180;
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", 150 + Math.cos(rad) * (radius - length/2));
+            line.setAttribute("y1", 150 + Math.sin(rad) * (radius - length/2));
+            line.setAttribute("x2", 150 + Math.cos(rad) * (radius + length/2));
+            line.setAttribute("y2", 150 + Math.sin(rad) * (radius + length/2));
+            line.setAttribute("class", "divider");
+            return line;
+        }
+
+        function updateTimers() {
+            const now = Date.now();
+            const elapsed = Math.floor((now - state.lastUpdate) / 1000) * TIME_MULTIPLIER;
+
+            if(elapsed > 0) {
+                updateSecondTimer(elapsed);
+                updateAllDayTimer(elapsed);
+                updateLunarTimer(elapsed);
+                state.lastUpdate = now;
+                updateUI();
+            }
+            requestAnimationFrame(updateTimers);
+        }
+
+        function updateSecondTimer(elapsed) {
+            state.timers.seconds -= elapsed;
+            while(state.timers.seconds < 0) {
+                state.timers.seconds += 60;
+                state.timers.minutes--;
+            }
+            while(state.timers.minutes < 0) {
+                state.timers.minutes += 60;
+                state.timers.hours--;
+            }
+            while(state.timers.hours < 0) {
+                state.timers.hours += 24;
+            }
+        }
+
+        function updateAllDayTimer(elapsed) {
+            state.timers.allDayProgress -= elapsed;
+            if(state.timers.allDayProgress < 0) {
+                state.timers.allDayProgress += state.lunarData.ALL_DAY_SECONDS;
+            }
+        }
+
+        function updateLunarTimer(elapsed) {
+            state.timers.lunarCycleProgress -= elapsed;
+            if(state.timers.lunarCycleProgress < 0) {
+                state.timers.lunarCycleProgress += state.lunarData.LUNAR_CYCLE_SECONDS;
+            }
+        }
+
+function updateUI() {
+    // Основные прогресс-бары
+    rings.seconds.element.style.strokeDashoffset =
+        rings.seconds.circumference * (1 - state.timers.seconds / 60);
+
+    rings.minutes.element.style.strokeDashoffset =
+        rings.minutes.circumference * (1 - state.timers.minutes / 60);
+
+    // День/ночь
+    const allDayProgress = state.timers.allDayProgress / state.lunarData.ALL_DAY_SECONDS;
+    rings.hours.allDay.style.strokeDashoffset =
+        rings.hours.circumference * (1 - allDayProgress);
+
+    // MOON_BELOW обновляется синхронно с ALL_DAY
+    let moonBelowProgress;
+    const moonBelowRatio = state.lunarData.MOON_BELOW_SECONDS / state.lunarData.ALL_DAY_SECONDS;
+
+    if (state.timers.allDayProgress > state.lunarData.MOON_BELOW_SECONDS) {
+        // Показываем полный круг moonBelow
+        moonBelowProgress = moonBelowRatio;
+    } else {
+        // Синхронно уменьшаем с allDay
+        moonBelowProgress = state.timers.allDayProgress / state.lunarData.ALL_DAY_SECONDS;
+    }
+
+    rings.hours.moonBelow.style.strokeDashoffset =
+        rings.hours.circumference * (1 - moonBelowProgress);
+
+    // Лунный цикл
+    const lunarProgress = state.timers.lunarCycleProgress / state.lunarData.LUNAR_CYCLE_SECONDS;
+    rings.lunar.lunarCycle.style.strokeDashoffset =
+        rings.lunar.circumference * (1 - lunarProgress);
+
+    // FULL_TO_NEW обновляется синхронно с LUNAR_CYCLE
+    let fullToNewProgress;
+    const fullToNewRatio = state.lunarData.FULL_TO_NEW_SECONDS / state.lunarData.LUNAR_CYCLE_SECONDS;
+
+    if (state.timers.lunarCycleProgress > state.lunarData.FULL_TO_NEW_SECONDS) {
+        // Показываем часть круга согласно пропорции
+        fullToNewProgress = fullToNewRatio;
+    } else {
+        // Синхронно уменьшаем с lunarCycle
+        fullToNewProgress = state.timers.lunarCycleProgress / state.lunarData.LUNAR_CYCLE_SECONDS;
+    }
+
+    rings.lunar.fullToNew.style.strokeDashoffset =
+        rings.lunar.circumference * (1 - fullToNewProgress);
+
+
+            // Текст
+            const days = Math.floor(state.timers.lunarCycleProgress / 86400);
+            document.querySelector('.progress-text').textContent =
+                `${String(days).padStart(2, '0')} ` +
+                `${String(state.timers.hours).padStart(2, '0')}:` +
+                `${String(state.timers.minutes).padStart(2, '0')}:` +
+                `${String(Math.floor(state.timers.seconds)).padStart(2, '0')}`;
+        }
+
+        async function fetchLunarData() {
+    if(state.isFetching || state.errorCount >= state.maxRetries) return;
+    state.isFetching = true;
+
+    try {
+        const url = new URL(API_URL);
+        // Добавьте user_id в параметры запроса
+        if(state.user_id) url.searchParams.set('user_id', state.user_id);
+        url.searchParams.set('lat', state.coords.lat);
+        url.searchParams.set('lon', state.coords.lon);
+        url.searchParams.set('currentTime', Date.now() / 1000 | 0);
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        // Обновите состояние с новыми данными
+        state.lunarData = {
+            ...DEFAULTS,
+            ...data,
+            FULL_TO_NEW_SECONDS: Math.min(data.FULL_TO_NEW_SECONDS, DEFAULTS.LUNAR_CYCLE_SECONDS)
+        };
+
+        state.solarData = {
+            SOLAR_DAY_SECONDS: data.SOLAR_DAY_SECONDS || DEFAULTS.SOLAR_DAY_SECONDS,
+            SUN_BELOW_HORIZON_SECONDS: data.SUN_BELOW_HORIZON_SECONDS || DEFAULTS.SUN_BELOW_HORIZON_SECONDS,
+            SOLAR_CYCLE_SECONDS: data.SOLAR_CYCLE_SECONDS || SOLAR_YEAR_SECONDS,
+            AUTUMN_TO_WINTER_SECONDS: data.AUTUMN_TO_WINTER_SECONDS || DEFAULTS.AUTUMN_TO_WINTER_SECONDS,
+            SUMMER_TO_WINTER_SECONDS: data.SUMMER_TO_WINTER_SECONDS || DEFAULTS.SUMMER_TO_WINTER_SECONDS,
+            SPRING_TO_WINTER_SECONDS: data.SPRING_TO_WINTER_SECONDS || DEFAULTS.SPRING_TO_WINTER_SECONDS
+        };
+
+        state.calendar_mode = data.CALENDAR_MODE || DEFAULT_CALENDAR_MODE;
+
+                state.timers = {
+                    seconds: 59,
+                    minutes: 59,
+                    hours: 23,
+                    allDayProgress: data.ALL_DAY_SECONDS || DEFAULTS.ALL_DAY_SECONDS,
+                    lunarCycleProgress: data.LUNAR_CYCLE_SECONDS || DEFAULTS.LUNAR_CYCLE_SECONDS
+                };
+                state.errorCount = 0;
+            } catch(e) {
+                console.error('API Error:', e);
+                if(++state.errorCount >= state.maxRetries) {
+                    revertToDefaultCoords();
+                }
+            } finally {
+                state.isFetching = false;
+            }
+        }
+
+        function revertToDefaultCoords() {
+            state.coords = DEFAULT_COORDS;
+            document.querySelector('.coordinates-input').value =
+                `${DEFAULT_COORDS.lat}, ${DEFAULT_COORDS.lon}`;
+            setTimeout(fetchLunarData, 10000);
+        }
+
+        document.querySelector('.edit-button').addEventListener('click', () => {
+            state.isEditing = !state.isEditing;
+            const input = document.querySelector('.coordinates-input');
+            const button = document.querySelector('.edit-button');
+
+            input.readOnly = !state.isEditing;
+            button.textContent = state.isEditing ? '💾' : '✏️';
+
+            if(!state.isEditing) {
+                const [lat, lon] = input.value.split(',').map(parseFloat);
+                if(!isNaN(lat) && !isNaN(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+                    state.coords = { lat, lon };
+                    fetchLunarData();
+                } else {
+                    input.value = `${state.coords.lat}, ${state.coords.lon}`;
+                }
+            }
+        });
+
+        // Инициализация
+        fetchLunarData();
+        updateTimers();
+        Telegram.WebApp.onEvent('viewportChanged', () => {
+    Telegram.WebApp.expand();
+});
+window.addEventListener('resize', () => {
+    Telegram.WebApp.expand();
+});
+    </script>
+</body>
+</html>
