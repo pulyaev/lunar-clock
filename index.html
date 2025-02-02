@@ -149,9 +149,13 @@
             SUMMER_TO_WINTER_SECONDS: 15724800,
             SPRING_TO_WINTER_SECONDS: 23587200,
             CALENDAR_MODE: DEFAULT_CALENDAR_MODE,    
-            DEFAULT_SECONDS: 59,
-            DEFAULT_MINUTES: 59,
-            DEFAULT_HOURS: 23
+    DEFAULT_SECONDS: 59,       // Для солнечного режима
+    DEFAULT_MINUTES: 59,
+    DEFAULT_HOURS: 23,
+    DEFAULT_LUNAR_SECONDS: 59, // Для лунного режима 
+    DEFAULT_LUNAR_MINUTES: 59,
+    DEFAULT_LUNAR_HOURS: 23
+            
             
         };
 
@@ -449,19 +453,19 @@ const fullToNewRatio = state.lunarData.FULL_TO_NEW_SECONDS / DEFAULTS.LUNAR_CYCL
 
         state.calendar_mode = data.CALENDAR_MODE || DEFAULT_CALENDAR_MODE;
 
-                state.timers = {
-    seconds: data.SECONDS || DEFAULTS.DEFAULT_SECONDS,
-    minutes: data.MINUTES || DEFAULTS.DEFAULT_MINUTES,
-    hours: data.HOURS || DEFAULTS.DEFAULT_HOURS,
-    if (state.calendar_mode === "solar") {
+state.timers = {
+    seconds: data.LUNAR_DAY_REMAINING_SECONDS || DEFAULTS.DEFAULT_LUNAR_SECONDS,
+    minutes: data.LUNAR_DAY_REMAINING_MINUTES || DEFAULTS.DEFAULT_LUNAR_MINUTES,
+    hours: data.LUNAR_DAY_REMAINING_HOURS || DEFAULTS.DEFAULT_LUNAR_HOURS,
+if (state.calendar_mode === "solar") {
     state.timers.seconds = data.SOLAR_SECONDS || DEFAULTS.DEFAULT_SECONDS;
     state.timers.minutes = data.SOLAR_MINUTES || DEFAULTS.DEFAULT_MINUTES;
     state.timers.hours = data.SOLAR_HOURS || DEFAULTS.DEFAULT_HOURS;
-    } else {
-    state.timers.seconds = data.LUNAR_SECONDS || DEFAULTS.DEFAULT_SECONDS;
-    state.timers.minutes = data.LUNAR_MINUTES || DEFAULTS.DEFAULT_MINUTES;
-    state.timers.hours = data.LUNAR_HOURS || DEFAULTS.DEFAULT_HOURS;    
-    }
+} else {
+    state.timers.seconds = data.LUNAR_DAY_REMAINING_SECONDS || DEFAULTS.DEFAULT_LUNAR_SECONDS;
+    state.timers.minutes = data.LUNAR_DAY_REMAINING_MINUTES || DEFAULTS.DEFAULT_LUNAR_MINUTES;
+    state.timers.hours = data.LUNAR_DAY_REMAINING_HOURS || DEFAULTS.DEFAULT_LUNAR_HOURS;
+}
     allDayProgress: data.ALL_DAY_SECONDS || DEFAULTS.ALL_DAY_SECONDS,
     lunarCycleProgress: data.LUNAR_CYCLE_SECONDS || DEFAULTS.LUNAR_CYCLE_SECONDS
 };
