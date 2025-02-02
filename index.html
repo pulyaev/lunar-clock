@@ -2,26 +2,27 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         @media (max-width: 360px) {
-    .container {
-        transform: scale(0.9);
-    }
-    .coordinates-input {
-        width: 160px;
-        font-size: 13px;
-    }
-}
+            .container {
+                transform: scale(0.9);
+            }
+            .coordinates-input {
+                width: 160px;
+                font-size: 13px;
+            }
+        }
 
-@media (max-height: 600px) {
-    body {
-        min-height: 90vh;
-    }
-    .coordinates-container {
-        bottom: -60px;
-    }
-}
+        @media (max-height: 600px) {
+            body {
+                min-height: 90vh;
+            }
+            .coordinates-container {
+                bottom: -60px;
+            }
+        }
+
         body {
             margin: 0;
             display: flex;
@@ -132,7 +133,7 @@
 
     <script>
         const DEFAULT_COORDS = { lat: 55.7558, lon: 37.6176 };
-        const SOLAR_YEAR_SECONDS = 31556926; // 365.2422 дней
+        const SOLAR_YEAR_SECONDS = 31556926;
         const DEFAULT_CALENDAR_MODE = "lunar";
         const API_URL = 'https://moon.puliaev.com/lunar-info';
         const TIME_MULTIPLIER = 1;
@@ -149,14 +150,12 @@
             SUMMER_TO_WINTER_SECONDS: 15724800,
             SPRING_TO_WINTER_SECONDS: 23587200,
             CALENDAR_MODE: DEFAULT_CALENDAR_MODE,    
-    DEFAULT_SECONDS: 59,       // Для солнечного режима
-    DEFAULT_MINUTES: 59,
-    DEFAULT_HOURS: 23,
-    DEFAULT_LUNAR_SECONDS: 59, // Для лунного режима 
-    DEFAULT_LUNAR_MINUTES: 59,
-    DEFAULT_LUNAR_HOURS: 23
-            
-            
+            DEFAULT_SECONDS: 59,
+            DEFAULT_MINUTES: 59,
+            DEFAULT_HOURS: 23,
+            DEFAULT_LUNAR_SECONDS: 59,
+            DEFAULT_LUNAR_MINUTES: 59,
+            DEFAULT_LUNAR_HOURS: 23
         };
 
         let state = {
@@ -182,7 +181,8 @@
                 SOLAR_CYCLE_SECONDS: SOLAR_YEAR_SECONDS,
                 AUTUMN_TO_WINTER_SECONDS: 7862400,
                 SUMMER_TO_WINTER_SECONDS: 15724800,
-                SPRING_TO_WINTER_SECONDS: 23587200}
+                SPRING_TO_WINTER_SECONDS: 23587200
+            }
         };
 
         const rings = {
@@ -191,6 +191,7 @@
             hours: createHoursProgressRing(115),
             lunar: createLunarProgressRing(140)
         };
+
         Telegram.WebApp.ready();
         const initData = Telegram.WebApp.initDataUnsafe;
         state.user_id = initData.user?.id || null;
@@ -343,73 +344,53 @@
             }
         }
 
-function updateAllDayTimer(elapsed) {
-    state.timers.allDayProgress -= elapsed;
-    if(state.timers.allDayProgress < 0) {
-        state.timers.allDayProgress += DEFAULTS.ALL_DAY_SECONDS; // Используем дефолтную длительность
-    }
-}
+        function updateAllDayTimer(elapsed) {
+            state.timers.allDayProgress -= elapsed;
+            if(state.timers.allDayProgress < 0) {
+                state.timers.allDayProgress += DEFAULTS.ALL_DAY_SECONDS;
+            }
+        }
 
-function updateLunarTimer(elapsed) {
-    state.timers.lunarCycleProgress -= elapsed;
-    if(state.timers.lunarCycleProgress < 0) {
-        state.timers.lunarCycleProgress += DEFAULTS.LUNAR_CYCLE_SECONDS; // Используем дефолтную длительность
-    }
-}
+        function updateLunarTimer(elapsed) {
+            state.timers.lunarCycleProgress -= elapsed;
+            if(state.timers.lunarCycleProgress < 0) {
+                state.timers.lunarCycleProgress += DEFAULTS.LUNAR_CYCLE_SECONDS;
+            }
+        }
 
-function updateUI() {
-    const isSolar = state.calendar_mode === "solar";
-    const dayProgress = isSolar 
-    ? state.timers.allDayProgress / state.solarData.SOLAR_DAY_SECONDS
-    : state.timers.allDayProgress / state.lunarData.ALL_DAY_SECONDS;
+        function updateUI() {
+            const isSolar = state.calendar_mode === "solar";
+            
+            // Основные прогресс-бары
+            rings.seconds.element.style.strokeDashoffset =
+                rings.seconds.circumference * (1 - state.timers.seconds / 60);
 
-    rings.hours.allDay.style.strokeDashoffset = rings.hours.circumference * (1 - dayProgress);
-    
-    // Основные прогресс-бары
-    rings.seconds.element.style.strokeDashoffset =
-        rings.seconds.circumference * (1 - state.timers.seconds / 60);
+            rings.minutes.element.style.strokeDashoffset =
+                rings.minutes.circumference * (1 - state.timers.minutes / 60);
 
-    rings.minutes.element.style.strokeDashoffset =
-        rings.minutes.circumference * (1 - state.timers.minutes / 60);
+            // День/ночь
+            const allDayProgress = state.timers.allDayProgress / DEFAULTS.ALL_DAY_SECONDS;
+            rings.hours.allDay.style.strokeDashoffset = rings.hours.circumference * (1 - allDayProgress);
 
-    // День/ночь
-const allDayProgress = state.timers.allDayProgress / DEFAULTS.ALL_DAY_SECONDS;
-rings.hours.allDay.style.strokeDashoffset = rings.hours.circumference * (1 - allDayProgress);
+            // MOON_BELOW
+            const moonBelowProgress = state.timers.allDayProgress > state.lunarData.MOON_BELOW_SECONDS 
+                ? state.lunarData.MOON_BELOW_SECONDS / DEFAULTS.ALL_DAY_SECONDS
+                : state.timers.allDayProgress / state.lunarData.ALL_DAY_SECONDS;
+                
+            rings.hours.moonBelow.style.strokeDashoffset =
+                rings.hours.circumference * (1 - moonBelowProgress);
 
-    // MOON_BELOW обновляется синхронно с ALL_DAY
-    let moonBelowProgress;
-    const moonBelowRatio = state.lunarData.MOON_BELOW_SECONDS / DEFAULTS.ALL_DAY_SECONDS;
+            // Лунный цикл
+            const lunarProgress = state.timers.lunarCycleProgress / DEFAULTS.LUNAR_CYCLE_SECONDS;
+            rings.lunar.lunarCycle.style.strokeDashoffset = rings.lunar.circumference * (1 - lunarProgress);
 
-    if (state.timers.allDayProgress > state.lunarData.MOON_BELOW_SECONDS) {
-        // Показываем полный круг moonBelow
-        moonBelowProgress = moonBelowRatio;
-    } else {
-        // Синхронно уменьшаем с allDay
-        moonBelowProgress = state.timers.allDayProgress / state.lunarData.ALL_DAY_SECONDS;
-    }
+            // FULL_TO_NEW
+            const fullToNewProgress = state.timers.lunarCycleProgress > state.lunarData.FULL_TO_NEW_SECONDS
+                ? state.lunarData.FULL_TO_NEW_SECONDS / DEFAULTS.LUNAR_CYCLE_SECONDS
+                : state.timers.lunarCycleProgress / state.lunarData.LUNAR_CYCLE_SECONDS;
 
-    rings.hours.moonBelow.style.strokeDashoffset =
-        rings.hours.circumference * (1 - moonBelowProgress);
-
-    // Лунный цикл
-const lunarProgress = state.timers.lunarCycleProgress / DEFAULTS.LUNAR_CYCLE_SECONDS;
-rings.lunar.lunarCycle.style.strokeDashoffset = rings.lunar.circumference * (1 - lunarProgress);
-
-    // FULL_TO_NEW обновляется синхронно с LUNAR_CYCLE
-    let fullToNewProgress;
-const fullToNewRatio = state.lunarData.FULL_TO_NEW_SECONDS / DEFAULTS.LUNAR_CYCLE_SECONDS;
-
-    if (state.timers.lunarCycleProgress > state.lunarData.FULL_TO_NEW_SECONDS) {
-        // Показываем часть круга согласно пропорции
-        fullToNewProgress = fullToNewRatio;
-    } else {
-        // Синхронно уменьшаем с lunarCycle
-        fullToNewProgress = state.timers.lunarCycleProgress / state.lunarData.LUNAR_CYCLE_SECONDS;
-    }
-
-    rings.lunar.fullToNew.style.strokeDashoffset =
-        rings.lunar.circumference * (1 - fullToNewProgress);
-
+            rings.lunar.fullToNew.style.strokeDashoffset =
+                rings.lunar.circumference * (1 - fullToNewProgress);
 
             // Текст
             const days = Math.floor(state.timers.lunarCycleProgress / 86400);
@@ -421,55 +402,50 @@ const fullToNewRatio = state.lunarData.FULL_TO_NEW_SECONDS / DEFAULTS.LUNAR_CYCL
         }
 
         async function fetchLunarData() {
-    if(state.isFetching || state.errorCount >= state.maxRetries) return;
-    state.isFetching = true;
+            if(state.isFetching || state.errorCount >= state.maxRetries) return;
+            state.isFetching = true;
 
-    try {
-        const url = new URL(API_URL);
-        // Добавьте user_id в параметры запроса
-        if(state.user_id) url.searchParams.set('user_id', state.user_id);
-        url.searchParams.set('lat', state.coords.lat);
-        url.searchParams.set('lon', state.coords.lon);
-        url.searchParams.set('currentTime', Date.now() / 1000 | 0);
+            try {
+                const url = new URL(API_URL);
+                if(state.user_id) url.searchParams.set('user_id', state.user_id);
+                url.searchParams.set('lat', state.coords.lat);
+                url.searchParams.set('lon', state.coords.lon);
+                url.searchParams.set('currentTime', Date.now() / 1000 | 0);
 
-        const response = await fetch(url);
-        const data = await response.json();
+                const response = await fetch(url);
+                const data = await response.json();
 
-        // Обновите состояние с новыми данными
-        state.lunarData = {
-            ...DEFAULTS,
-            ...data,
-            FULL_TO_NEW_SECONDS: Math.min(data.FULL_TO_NEW_SECONDS, DEFAULTS.LUNAR_CYCLE_SECONDS)
-        };
+                state.lunarData = {
+                    ...DEFAULTS,
+                    ...data,
+                    FULL_TO_NEW_SECONDS: Math.min(data.FULL_TO_NEW_SECONDS, DEFAULTS.LUNAR_CYCLE_SECONDS)
+                };
 
-        state.solarData = {
-            SOLAR_DAY_SECONDS: data.SOLAR_DAY_SECONDS || DEFAULTS.SOLAR_DAY_SECONDS,
-            SUN_BELOW_HORIZON_SECONDS: data.SUN_BELOW_HORIZON_SECONDS || DEFAULTS.SUN_BELOW_HORIZON_SECONDS,
-            SOLAR_CYCLE_SECONDS: data.SOLAR_CYCLE_SECONDS || SOLAR_YEAR_SECONDS,
-            AUTUMN_TO_WINTER_SECONDS: data.AUTUMN_TO_WINTER_SECONDS || DEFAULTS.AUTUMN_TO_WINTER_SECONDS,
-            SUMMER_TO_WINTER_SECONDS: data.SUMMER_TO_WINTER_SECONDS || DEFAULTS.SUMMER_TO_WINTER_SECONDS,
-            SPRING_TO_WINTER_SECONDS: data.SPRING_TO_WINTER_SECONDS || DEFAULTS.SPRING_TO_WINTER_SECONDS
-        };
+                state.solarData = {
+                    SOLAR_DAY_SECONDS: data.SOLAR_DAY_SECONDS || DEFAULTS.SOLAR_DAY_SECONDS,
+                    SUN_BELOW_HORIZON_SECONDS: data.SUN_BELOW_HORIZON_SECONDS || DEFAULTS.SUN_BELOW_HORIZON_SECONDS,
+                    SOLAR_CYCLE_SECONDS: data.SOLAR_CYCLE_SECONDS || SOLAR_YEAR_SECONDS,
+                    AUTUMN_TO_WINTER_SECONDS: data.AUTUMN_TO_WINTER_SECONDS || DEFAULTS.AUTUMN_TO_WINTER_SECONDS,
+                    SUMMER_TO_WINTER_SECONDS: data.SUMMER_TO_WINTER_SECONDS || DEFAULTS.SUMMER_TO_WINTER_SECONDS,
+                    SPRING_TO_WINTER_SECONDS: data.SPRING_TO_WINTER_SECONDS || DEFAULTS.SPRING_TO_WINTER_SECONDS
+                };
 
-        state.calendar_mode = data.CALENDAR_MODE || DEFAULT_CALENDAR_MODE;
+                state.calendar_mode = data.CALENDAR_MODE || DEFAULT_CALENDAR_MODE;
 
-state.timers = {
-    seconds: data.LUNAR_DAY_REMAINING_SECONDS || DEFAULTS.DEFAULT_LUNAR_SECONDS,
-    minutes: data.LUNAR_DAY_REMAINING_MINUTES || DEFAULTS.DEFAULT_LUNAR_MINUTES,
-    hours: data.LUNAR_DAY_REMAINING_HOURS || DEFAULTS.DEFAULT_LUNAR_HOURS,
-if (state.calendar_mode === "solar") {
-    state.timers.seconds = data.SOLAR_SECONDS || DEFAULTS.DEFAULT_SECONDS;
-    state.timers.minutes = data.SOLAR_MINUTES || DEFAULTS.DEFAULT_MINUTES;
-    state.timers.hours = data.SOLAR_HOURS || DEFAULTS.DEFAULT_HOURS;
-} else {
-    state.timers.seconds = data.LUNAR_DAY_REMAINING_SECONDS || DEFAULTS.DEFAULT_LUNAR_SECONDS;
-    state.timers.minutes = data.LUNAR_DAY_REMAINING_MINUTES || DEFAULTS.DEFAULT_LUNAR_MINUTES;
-    state.timers.hours = data.LUNAR_DAY_REMAINING_HOURS || DEFAULTS.DEFAULT_LUNAR_HOURS;
-}
-    allDayProgress: data.ALL_DAY_SECONDS || DEFAULTS.ALL_DAY_SECONDS,
-    lunarCycleProgress: data.LUNAR_CYCLE_SECONDS || DEFAULTS.LUNAR_CYCLE_SECONDS
-};
-        
+                state.timers = {
+                    seconds: state.calendar_mode === "solar" 
+                        ? (data.SOLAR_SECONDS || DEFAULTS.DEFAULT_SECONDS)
+                        : (data.LUNAR_DAY_REMAINING_SECONDS || DEFAULTS.DEFAULT_LUNAR_SECONDS),
+                    minutes: state.calendar_mode === "solar" 
+                        ? (data.SOLAR_MINUTES || DEFAULTS.DEFAULT_MINUTES)
+                        : (data.LUNAR_DAY_REMAINING_MINUTES || DEFAULTS.DEFAULT_LUNAR_MINUTES),
+                    hours: state.calendar_mode === "solar" 
+                        ? (data.SOLAR_HOURS || DEFAULTS.DEFAULT_HOURS)
+                        : (data.LUNAR_DAY_REMAINING_HOURS || DEFAULTS.DEFAULT_LUNAR_HOURS),
+                    allDayProgress: data.ALL_DAY_SECONDS || DEFAULTS.ALL_DAY_SECONDS,
+                    lunarCycleProgress: data.LUNAR_CYCLE_SECONDS || DEFAULTS.LUNAR_CYCLE_SECONDS
+                };
+
                 state.errorCount = 0;
             } catch(e) {
                 console.error('API Error:', e);
@@ -511,11 +487,11 @@ if (state.calendar_mode === "solar") {
         fetchLunarData();
         updateTimers();
         Telegram.WebApp.onEvent('viewportChanged', () => {
-    Telegram.WebApp.expand();
-});
-window.addEventListener('resize', () => {
-    Telegram.WebApp.expand();
-});
+            Telegram.WebApp.expand();
+        });
+        window.addEventListener('resize', () => {
+            Telegram.WebApp.expand();
+        });
     </script>
 </body>
 </html>
