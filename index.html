@@ -357,60 +357,6 @@
                 state.timers.lunarCycleProgress += DEFAULTS.LUNAR_CYCLE_SECONDS;
             }
         }
-function updateUI() {
-    const isSolar = state.calendar_mode === "solar";
-    
-    // Основные таймеры (секунды, минуты, часы)
-    rings.seconds.element.style.strokeDashoffset =
-        rings.seconds.circumference * (1 - state.timers.seconds / 60);
-
-    rings.minutes.element.style.strokeDashoffset =
-        rings.minutes.circumference * (1 - state.timers.minutes / 60);
-
-    // Расчет параметров для ALL_DAY прогресса
-    const currentAllDayDuration = isSolar 
-        ? state.solarData.SOLAR_DAY_SECONDS 
-        : state.lunarData.ALL_DAY_SECONDS;
-    
-    const allDayProgress = state.timers.allDayProgress / currentAllDayDuration;
-    rings.hours.allDay.style.strokeDashoffset = rings.hours.circumference * (1 - allDayProgress);
-
-    // Расчет параметров для MOON_BELOW
-    const moonBelowRatio = state.lunarData.MOON_BELOW_SECONDS / currentAllDayDuration;
-    const moonBelowCircumference = rings.hours.circumference * moonBelowRatio;
-    
-    // Устанавливаем длину и позицию сегмента MOON_BELOW
-    rings.hours.moonBelow.style.strokeDasharray = `${moonBelowCircumference} ${rings.hours.circumference}`;
-    
-    // Рассчитываем прогресс MOON_BELOW
-    const moonBelowElapsed = currentAllDayDuration - state.timers.allDayProgress;
-    const moonBelowProgress = Math.min(moonBelowElapsed / state.lunarData.MOON_BELOW_SECONDS, 1);
-    rings.hours.moonBelow.style.strokeDashoffset = moonBelowCircumference * (1 - moonBelowProgress);
-
-    // Расчет параметров для лунного цикла
-    const lunarProgress = state.timers.lunarCycleProgress / state.lunarData.LUNAR_CYCLE_SECONDS;
-    rings.lunar.lunarCycle.style.strokeDashoffset = rings.lunar.circumference * (1 - lunarProgress);
-
-    // Расчет параметров для FULL_TO_NEW
-    const fullToNewRatio = state.lunarData.FULL_TO_NEW_SECONDS / state.lunarData.LUNAR_CYCLE_SECONDS;
-    const fullToNewCircumference = rings.lunar.circumference * fullToNewRatio;
-    
-    // Устанавливаем длину и позицию сегмента FULL_TO_NEW
-    rings.lunar.fullToNew.style.strokeDasharray = `${fullToNewCircumference} ${rings.lunar.circumference}`;
-    
-    // Рассчитываем прогресс FULL_TO_NEW
-    const fullToNewElapsed = state.lunarData.LUNAR_CYCLE_SECONDS - state.timers.lunarCycleProgress;
-    const fullToNewProgress = Math.min(fullToNewElapsed / state.lunarData.FULL_TO_NEW_SECONDS, 1);
-    rings.lunar.fullToNew.style.strokeDashoffset = fullToNewCircumference * (1 - fullToNewProgress);
-
-    // Обновление текстового отображения
-    const days = Math.floor(state.timers.lunarCycleProgress / 86400);
-    document.querySelector('.progress-text').textContent =
-        `${String(days).padStart(2, '0')} ` +
-        `${String(state.timers.hours).padStart(2, '0')}:` +
-        `${String(state.timers.minutes).padStart(2, '0')}:` +
-        `${String(Math.floor(state.timers.seconds)).padStart(2, '0')}`;
-}
 
         async function fetchLunarData() {
             if(state.isFetching || state.errorCount >= state.maxRetries) return;
@@ -434,7 +380,60 @@ function updateUI() {
 
                 state.solarData = {
                     SOLAR_DAY_SECONDS: data.SOLAR_DAY_SECONDS || DEFAULTS.SOLAR_DAY_SECONDS,
-                    SUN_BELOW_HORIZON_SECONDS: data.SUN_BELOW_HORIZON_SECONDS || DEFAULTS.SUN_BELOW_HORIZON_SECONDS,
+                    SUN_BELOW_HORIZON_SECONDS: data.SUN_BELOW_HORIZON_SECONfunction updateUI() {
+    const isSolar = state.calendar_mode === "solar";
+    
+    // Основные таймеры
+    rings.seconds.element.style.strokeDashoffset =
+        rings.seconds.circumference * (1 - state.timers.seconds / 60);
+
+    rings.minutes.element.style.strokeDashoffset =
+        rings.minutes.circumference * (1 - state.timers.minutes / 60);
+
+    // ALL_DAY прогресс
+    const currentAllDayDuration = isSolar 
+        ? state.solarData.SOLAR_DAY_SECONDS 
+        : state.lunarData.ALL_DAY_SECONDS;
+    
+    const allDayProgress = state.timers.allDayProgress / currentAllDayDuration;
+    rings.hours.allDay.style.strokeDashoffset = rings.hours.circumference * (1 - allDayProgress);
+
+    // MOON_BELOW прогресс
+    const maxMoonBelow = Math.min(state.lunarData.MOON_BELOW_SECONDS, currentAllDayDuration);
+    const moonBelowRatio = maxMoonBelow / currentAllDayDuration;
+    const moonBelowCircumference = rings.hours.circumference * moonBelowRatio;
+    const moonBelowGap = rings.hours.circumference - moonBelowCircumference;
+    
+    rings.hours.moonBelow.style.strokeDasharray = `${moonBelowCircumference} ${moonBelowGap}`;
+    
+    const moonBelowElapsed = currentAllDayDuration - state.timers.allDayProgress;
+    const moonBelowProgress = Math.min(moonBelowElapsed / maxMoonBelow, 1);
+    rings.hours.moonBelow.style.strokeDashoffset = moonBelowCircumference * (1 - moonBelowProgress);
+
+    // Лунный цикл
+    const lunarProgress = state.timers.lunarCycleProgress / state.lunarData.LUNAR_CYCLE_SECONDS;
+    rings.lunar.lunarCycle.style.strokeDashoffset = rings.lunar.circumference * (1 - lunarProgress);
+
+    // FULL_TO_NEW прогресс
+    const maxFullToNew = Math.min(state.lunarData.FULL_TO_NEW_SECONDS, state.lunarData.LUNAR_CYCLE_SECONDS);
+    const fullToNewRatio = maxFullToNew / state.lunarData.LUNAR_CYCLE_SECONDS;
+    const fullToNewCircumference = rings.lunar.circumference * fullToNewRatio;
+    const fullToNewGap = rings.lunar.circumference - fullToNewCircumference;
+    
+    rings.lunar.fullToNew.style.strokeDasharray = `${fullToNewCircumference} ${fullToNewGap}`;
+    
+    const fullToNewElapsed = state.lunarData.LUNAR_CYCLE_SECONDS - state.timers.lunarCycleProgress;
+    const fullToNewProgress = Math.min(fullToNewElapsed / maxFullToNew, 1);
+    rings.lunar.fullToNew.style.strokeDashoffset = fullToNewCircumference * (1 - fullToNewProgress);
+
+    // Обновление текста
+    const days = Math.floor(state.timers.lunarCycleProgress / 86400);
+    document.querySelector('.progress-text').textContent =
+        `${String(days).padStart(2, '0')} ` +
+        `${String(state.timers.hours).padStart(2, '0')}:` +
+        `${String(state.timers.minutes).padStart(2, '0')}:` +
+        `${String(Math.floor(state.timers.seconds)).padStart(2, '0')}`;
+}DS || DEFAULTS.SUN_BELOW_HORIZON_SECONDS,
                     SOLAR_CYCLE_SECONDS: data.SOLAR_CYCLE_SECONDS || SOLAR_YEAR_SECONDS,
                     AUTUMN_TO_WINTER_SECONDS: data.AUTUMN_TO_WINTER_SECONDS || DEFAULTS.AUTUMN_TO_WINTER_SECONDS,
                     SUMMER_TO_WINTER_SECONDS: data.SUMMER_TO_WINTER_SECONDS || DEFAULTS.SUMMER_TO_WINTER_SECONDS,
