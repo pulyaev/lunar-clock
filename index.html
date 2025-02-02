@@ -148,7 +148,11 @@
             AUTUMN_TO_WINTER_SECONDS: 7862400,
             SUMMER_TO_WINTER_SECONDS: 15724800,
             SPRING_TO_WINTER_SECONDS: 23587200,
-            CALENDAR_MODE: DEFAULT_CALENDAR_MODE
+            CALENDAR_MODE: DEFAULT_CALENDAR_MODE,    
+            DEFAULT_SECONDS: 59,
+            DEFAULT_MINUTES: 59,
+            DEFAULT_HOURS: 23
+            
         };
 
         let state = {
@@ -350,6 +354,13 @@
         }
 
 function updateUI() {
+    const isSolar = state.calendar_mode === "solar";
+    const dayProgress = isSolar 
+    ? state.timers.allDayProgress / state.solarData.SOLAR_DAY_SECONDS
+    : state.timers.allDayProgress / state.lunarData.ALL_DAY_SECONDS;
+
+    rings.hours.allDay.style.strokeDashoffset = rings.hours.circumference * (1 - dayProgress);
+    
     // Основные прогресс-бары
     rings.seconds.element.style.strokeDashoffset =
         rings.seconds.circumference * (1 - state.timers.seconds / 60);
@@ -441,12 +452,22 @@ function updateUI() {
         state.calendar_mode = data.CALENDAR_MODE || DEFAULT_CALENDAR_MODE;
 
                 state.timers = {
-                    seconds: 59,
-                    minutes: 59,
-                    hours: 23,
-                    allDayProgress: data.ALL_DAY_SECONDS || DEFAULTS.ALL_DAY_SECONDS,
-                    lunarCycleProgress: data.LUNAR_CYCLE_SECONDS || DEFAULTS.LUNAR_CYCLE_SECONDS
-                };
+    seconds: data.SECONDS || DEFAULTS.DEFAULT_SECONDS,
+    minutes: data.MINUTES || DEFAULTS.DEFAULT_MINUTES,
+    hours: data.HOURS || DEFAULTS.DEFAULT_HOURS,
+    if (state.calendar_mode === "solar") {
+    state.timers.seconds = data.SOLAR_SECONDS || DEFAULTS.DEFAULT_SECONDS;
+    state.timers.minutes = data.SOLAR_MINUTES || DEFAULTS.DEFAULT_MINUTES;
+    state.timers.hours = data.SOLAR_HOURS || DEFAULTS.DEFAULT_HOURS;
+    } else {
+    state.timers.seconds = data.LUNAR_SECONDS || DEFAULTS.DEFAULT_SECONDS;
+    state.timers.minutes = data.LUNAR_MINUTES || DEFAULTS.DEFAULT_MINUTES;
+    state.timers.hours = data.LUNAR_HOURS || DEFAULTS.DEFAULT_HOURS;    
+    }
+    allDayProgress: data.ALL_DAY_SECONDS || DEFAULTS.ALL_DAY_SECONDS,
+    lunarCycleProgress: data.LUNAR_CYCLE_SECONDS || DEFAULTS.LUNAR_CYCLE_SECONDS
+};
+        
                 state.errorCount = 0;
             } catch(e) {
                 console.error('API Error:', e);
