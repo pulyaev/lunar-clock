@@ -49,14 +49,22 @@
 
         .progress-text {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             color: white;
-            font-size: 1.1em;
+            font-size: 1.2em;
             line-height: 1.5;
             z-index: 2;
+        }
+
+        .progress-text .days {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-text .time {
+            font-size: 1.5rem;
         }
 
         .progress-ring {
@@ -145,7 +153,10 @@
 <body>
     <div class="container">
            <div class="error-indicator">📡</div>
-        <div class="progress-text">29.51 23:59:59</div>
+        <div class="progress-text">
+            <div class="days">29 days</div>
+            <div class="time">23:59:59</div>
+        </div>
         <div class="coordinates-container">
             <div class="coordinates-box">
                 <input type="text" class="coordinates-input" value="55.7558, 37.6176" />
@@ -451,11 +462,11 @@ const daysString = totalDays.toFixed(2); // Пример: "24.00" или "5.75"
 const [intPart, decPart] = daysString.split('.');
 const formattedIntPart = String(intPart).padStart(2, '0'); // Форматируем только целую часть
 
-document.querySelector('.progress-text').textContent =
-    `${formattedIntPart}.${decPart} ` + 
-        `${String(state.timers.hours).padStart(2, '0')}:` +
-        `${String(state.timers.minutes).padStart(2, '0')}:` +
-        `${String(Math.floor(state.timers.seconds)).padStart(2, '0')}`;
+            progressTextElement.querySelector('.days').textContent = `${String(days).padStart(2, '0')} days`;
+            progressTextElement.querySelector('.time').textContent =
+                `${String(state.timers.hours).padStart(2, '0')}:` +
+                `${String(state.timers.minutes).padStart(2, '0')}:` +
+                `${String(Math.floor(state.timers.seconds)).padStart(2, '0')}`;
 }
 
         async function fetchLunarData() {
