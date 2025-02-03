@@ -446,7 +446,7 @@ function updateUI() {
     // Обновление текста
     const days = Math.floor(state.timers.lunarCycleProgress / 86400);
     document.querySelector('.progress-text').textContent =
-        `${String(days).padStart(2, '0')} ` +
+        `${String(days).padStart(4, '0')} ` +
         `${String(state.timers.hours).padStart(2, '0')}:` +
         `${String(state.timers.minutes).padStart(2, '0')}:` +
         `${String(Math.floor(state.timers.seconds)).padStart(2, '0')}`;
