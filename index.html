@@ -118,10 +118,25 @@
             display: flex;
             align-items: center;
         }
+                .error-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            animation: blink 1s infinite;
+            opacity: 0;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+           <div class="error-indicator">📡</div>
         <div class="progress-text">29 23:59:59</div>
         <div class="coordinates-container">
             <div class="coordinates-box">
@@ -182,7 +197,9 @@
                 AUTUMN_TO_WINTER_SECONDS: 7862400,
                 SUMMER_TO_WINTER_SECONDS: 15724800,
                 SPRING_TO_WINTER_SECONDS: 23587200
-            }
+            },
+            lastApiCall: Date.now(),
+            hasApiError: false
         };
 
         const rings = {
@@ -314,10 +331,10 @@
             line.setAttribute("class", "divider");
             return line;
         }
-
         function updateTimers() {
             const now = Date.now();
             const elapsed = Math.floor((now - state.lastUpdate) / 1000) * TIME_MULTIPLIER;
+            const elapsedSinceApiCall = now - state.lastApiCall;
 
             if(elapsed > 0) {
                 updateSecondTimer(elapsed);
@@ -325,9 +342,16 @@
                 updateLunarTimer(elapsed);
                 state.lastUpdate = now;
                 updateUI();
+
+                // Check if a minute has passed since last API call
+                if (elapsedSinceApiCall >= 60000) { // 60000ms = 1 minute
+                    fetchLunarData();
+                    state.lastApiCall = now;
+                }
             }
             requestAnimationFrame(updateTimers);
         }
+
 
         function updateSecondTimer(elapsed) {
             state.timers.seconds -= elapsed;
@@ -387,6 +411,10 @@ function updateUI() {
         state.timers.lunarCycleProgress / DEFAULTS.LUNAR_CYCLE_SECONDS, 
         fullToNewMax
     );
+    // Update error indicator
+            const errorIndicator = document.querySelector('.error-indicator');
+            errorIndicator.style.display = state.hasApiError ? 'block' : 'none';
+    
     rings.lunar.fullToNew.style.strokeDashoffset = 
         rings.lunar.circumference * (1 - fullToNewCurrent);
 
@@ -402,6 +430,7 @@ function updateUI() {
         async function fetchLunarData() {
             if(state.isFetching || state.errorCount >= state.maxRetries) return;
             state.isFetching = true;
+            state.hasApiError = false; // Reset error state before new attempt
 
             try {
                 const url = new URL(API_URL);
@@ -411,8 +440,10 @@ function updateUI() {
                 url.searchParams.set('currentTime', Date.now() / 1000 | 0);
 
                 const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
-
                 state.lunarData = {
                     ...DEFAULTS,
                     ...data,
@@ -445,13 +476,16 @@ function updateUI() {
                 };
 
                 state.errorCount = 0;
+                state.hasApiError = false;
             } catch(e) {
                 console.error('API Error:', e);
+                state.hasApiError = true;
                 if(++state.errorCount >= state.maxRetries) {
                     revertToDefaultCoords();
                 }
             } finally {
                 state.isFetching = false;
+                updateUI(); // Update UI to reflect error state
             }
         }
 
