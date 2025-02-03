@@ -47,16 +47,22 @@
             height: 300px;
         }
 
-        .progress-text {
-            position: absolute;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: white;
-            font-size: 1.2em;
-            line-height: 1.5;
-            z-index: 2;
-        }
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2em;
+    line-height: 1.5;
+    z-index: 2;
+    width: 100%;
+    text-align: center;
+}
 
         .progress-text .days {
             font-size: 1rem;
@@ -184,7 +190,7 @@
         const DEFAULT_CALENDAR_MODE = "lunar";
         const API_URL = 'https://moon.puliaev.com/lunar-info';
         const TIME_MULTIPLIER = 1;
-
+const progressTextElement = document.querySelector('.progress-text');
         const DEFAULTS = {
             BASE_LUNAR_SECONDS: 2548800,    // Базовое значение для лунного цикла
             BASE_LUNAR_DAY_SECONDS: 86400,        // Базовое значение для дневного цикла
@@ -455,18 +461,17 @@ function updateUI() {
         rings.lunar.circumference * (1 - fullToNewCurrent);
 
     // Обновление текста
-const totalDays = state.timers.lunarCycleProgress / 86400;
-const daysString = totalDays.toFixed(2); // Пример: "24.00" или "5.75"
+    const totalDays = state.timers.lunarCycleProgress / 86400;
+    const daysString = totalDays.toFixed(2);
+    const [intPart, decPart] = daysString.split('.');
+    const formattedIntPart = String(intPart).padStart(2, '0');
 
-// Разделяем целую и дробную части, убирая ведущие нули у целой части
-const [intPart, decPart] = daysString.split('.');
-const formattedIntPart = String(intPart).padStart(2, '0'); // Форматируем только целую часть
-
-progressTextElement.querySelector('.time').textContent =
-                `${String(state.timers.hours).padStart(2, '0')}:` +
-                `${String(state.timers.minutes).padStart(2, '0')}:` +
-                `${String(Math.floor(state.timers.seconds)).padStart(2, '0')}`;
-progressTextElement.querySelector('.days').textContent = `${formattedIntPart}.${decPart}`;
+    progressTextElement.querySelector('.time').textContent =
+        `${String(state.timers.hours).padStart(2, '0')}:` +
+        `${String(state.timers.minutes).padStart(2, '0')}:` +
+        `${String(Math.floor(state.timers.seconds)).padStart(2, '0')}`;
+    
+    progressTextElement.querySelector('.days').textContent = `${formattedIntPart}.${decPart}`;
 }
 
         async function fetchLunarData() {
