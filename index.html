@@ -23,6 +23,14 @@
             }
         }
 
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
         body {
             margin: 0;
             display: flex;
@@ -518,11 +526,47 @@ function updateUI() {
         // Инициализация
         fetchLunarData();
         updateTimers();
+ // Initialize Telegram WebApp
+        Telegram.WebApp.ready();
+        
+        // Force expand the WebApp to full height
+        Telegram.WebApp.expand();
+        
+        // Set the viewport height to maximize space
+        Telegram.WebApp.setViewportHeight(100);
+
+        // Request platform to show in fullscreen if supported
+        if (Telegram.WebApp.isExpanded) {
+            Telegram.WebApp.requestViewport();
+        }
+
+        // Handle viewport changes
         Telegram.WebApp.onEvent('viewportChanged', () => {
+            // Re-expand if viewport changes
             Telegram.WebApp.expand();
         });
-        window.addEventListener('resize', () => {
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                // Re-expand when page becomes visible again
+                Telegram.WebApp.expand();
+            }
+        });
+
+        // Handle orientation changes
+        window.addEventListener('orientationchange', () => {
+            // Small delay to let the orientation change complete
+            setTimeout(() => {
+                Telegram.WebApp.expand();
+            }, 100);
+        });
+
+        // Existing code...
+
+        window.addEventListener('load', () => {
             Telegram.WebApp.expand();
+            Telegram.WebApp.setViewportHeight(100);
         });
     </script>
 </body>
