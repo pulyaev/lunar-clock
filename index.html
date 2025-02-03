@@ -175,6 +175,10 @@
         const TIME_MULTIPLIER = 1;
 
         const DEFAULTS = {
+            BASE_LUNAR_SECONDS: 2548800,    // Базовое значение для лунного цикла
+            BASE_LUNAR_DAY_SECONDS: 86400,        // Базовое значение для дневного цикла
+            BASE_SOLAR_DAY_SECONDS: 86400,      // Базовое значение для солнечного цикла
+            BASE_YEAR_SECONDS: 31556926,    // Базовое значение для годового цикла
             LUNAR_CYCLE_SECONDS: 2548800,
             FULL_TO_NEW_SECONDS: 1253800,
             ALL_DAY_SECONDS: 86400,
@@ -412,24 +416,24 @@ function updateUI() {
         rings.minutes.circumference * (1 - state.timers.minutes / 60);
 
     // ALL_DAY (основной)
-    const allDayProgress = state.timers.allDayProgress / DEFAULTS.ALL_DAY_SECONDS;
+    const allDayProgress = state.timers.allDayProgress / DEFAULTS.BASE_LUNAR_DAY_SECONDS;
     rings.hours.allDay.style.strokeDashoffset = rings.hours.circumference * (1 - allDayProgress);
 
     // MOON_BELOW (дополнительный)
-    const moonBelowMax = DEFAULTS.MOON_BELOW_SECONDS / DEFAULTS.ALL_DAY_SECONDS;
-    const moonBelowCurrent = Math.min(state.timers.allDayProgress / DEFAULTS.ALL_DAY_SECONDS, moonBelowMax);
+    const moonBelowMax = DEFAULTS.MOON_BELOW_SECONDS / DEFAULTS.BASE_LUNAR_DAY_SECONDS;
+    const moonBelowCurrent = Math.min(state.timers.allDayProgress / DEFAULTS.BASE_LUNAR_DAY_SECONDS, moonBelowMax);
     rings.hours.moonBelow.style.strokeDashoffset = 
         rings.hours.circumference * (1 - moonBelowCurrent);
 
     // LUNAR_CYCLE (основной)
-    const lunarProgress = state.timers.lunarCycleProgress / DEFAULTS.LUNAR_CYCLE_SECONDS;
+    const lunarProgress = state.timers.lunarCycleProgress / DEFAULTS.BASE_LUNAR_SECONDS;
     rings.lunar.lunarCycle.style.strokeDashoffset = 
         rings.lunar.circumference * (1 - lunarProgress);
 
     // FULL_TO_NEW (дополнительный)
-    const fullToNewMax = DEFAULTS.FULL_TO_NEW_SECONDS / DEFAULTS.LUNAR_CYCLE_SECONDS;
+    const fullToNewMax = DEFAULTS.FULL_TO_NEW_SECONDS / DEFAULTS.BASE_LUNAR_SECONDS;
     const fullToNewCurrent = Math.min(
-        state.timers.lunarCycleProgress / DEFAULTS.LUNAR_CYCLE_SECONDS, 
+        state.timers.lunarCycleProgress / DEFAULTS.BASE_LUNAR_SECONDS, 
         fullToNewMax
     );
     // Update error indicator
@@ -465,6 +469,13 @@ function updateUI() {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
+                
+                // Обновляем базовые значения из API
+                if (data.BASE_LUNAR_SECONDS) DEFAULTS.BASE_LUNAR_SECONDS = data.BASE_LUNAR_SECONDS;
+                if (data.BASE_LUNAR_DAY_SECONDS) DEFAULTS.BASE_LUNAR_DAY_SECONDS = data.BASE_LUNAR_DAY_SECONDS;
+                if (data.BASE_SOLAR_DAY_SECONDS) DEFAULTS.BASE_SOLAR_DAY_SECONDS = data.BASE_SOLAR_DAY_SECONDS;
+                if (data.BASE_YEAR_SECONDS) DEFAULTS.BASE_YEAR_SECONDS = data.BASE_YEAR_SECONDS;
+                
                 state.lunarData = {
                     ...DEFAULTS,
                     ...data,
