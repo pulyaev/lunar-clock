@@ -526,8 +526,19 @@ function updateUI() {
         // Инициализация
         fetchLunarData();
         updateTimers();
- // Initialize Telegram WebApp
+
+        // Initialize Telegram WebApp
         Telegram.WebApp.ready();
+        
+        // Set WebApp parameters to hide header
+        Telegram.WebApp.setHeaderColor('secondary_bg_color');
+        Telegram.WebApp.expand();
+        Telegram.WebApp.enableClosingConfirmation();
+        
+        // Hide the header
+        Telegram.WebApp.MainButton.hide();
+        Telegram.WebApp.BackButton.hide();
+        Telegram.WebApp.headerColor = '#1c1c1e';
         
         // Force expand the WebApp to full height
         Telegram.WebApp.expand();
@@ -561,16 +572,6 @@ function updateUI() {
                 Telegram.WebApp.expand();
             }, 100);
         });
-
-        // Set WebApp parameters to hide header
-        Telegram.WebApp.setHeaderColor('secondary_bg_color');
-        Telegram.WebApp.expand();
-        Telegram.WebApp.enableClosingConfirmation();
-        
-        // Hide the header
-        Telegram.WebApp.MainButton.hide();
-        Telegram.WebApp.BackButton.hide();
-        Telegram.WebApp.headerColor = '#1c1c1e';
 
         window.addEventListener('load', () => {
             Telegram.WebApp.expand();
