@@ -154,8 +154,8 @@
     <div class="container">
            <div class="error-indicator">📡</div>
         <div class="progress-text">
-            <div class="days">29 days</div>
             <div class="time">23:59:59</div>
+            <div class="days">29.51</div>
         </div>
         <div class="coordinates-container">
             <div class="coordinates-box">
@@ -462,11 +462,11 @@ const daysString = totalDays.toFixed(2); // Пример: "24.00" или "5.75"
 const [intPart, decPart] = daysString.split('.');
 const formattedIntPart = String(intPart).padStart(2, '0'); // Форматируем только целую часть
 
-            progressTextElement.querySelector('.days').textContent = `${String(days).padStart(2, '0')} days`;
-            progressTextElement.querySelector('.time').textContent =
+progressTextElement.querySelector('.time').textContent =
                 `${String(state.timers.hours).padStart(2, '0')}:` +
                 `${String(state.timers.minutes).padStart(2, '0')}:` +
                 `${String(Math.floor(state.timers.seconds)).padStart(2, '0')}`;
+progressTextElement.querySelector('.days').textContent = `${formattedIntPart}.${decPart}`;
 }
 
         async function fetchLunarData() {
