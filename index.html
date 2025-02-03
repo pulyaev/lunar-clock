@@ -155,6 +155,19 @@
     </div>
 
     <script>
+        // Initialize Telegram WebApp
+        Telegram.WebApp.ready();
+        
+        // Set WebApp parameters to hide header
+        Telegram.WebApp.setHeaderColor('secondary_bg_color');
+        Telegram.WebApp.expand();
+        Telegram.WebApp.enableClosingConfirmation();
+        
+        // Hide the header
+        Telegram.WebApp.MainButton.hide();
+        Telegram.WebApp.BackButton.hide();
+        Telegram.WebApp.headerColor = '#1c1c1e';
+        
         const DEFAULT_COORDS = { lat: 55.7558, lon: 37.6176 };
         const SOLAR_YEAR_SECONDS = 31556926;
         const DEFAULT_CALENDAR_MODE = "lunar";
@@ -526,19 +539,6 @@ function updateUI() {
         // Инициализация
         fetchLunarData();
         updateTimers();
-
-        // Initialize Telegram WebApp
-        Telegram.WebApp.ready();
-        
-        // Set WebApp parameters to hide header
-        Telegram.WebApp.setHeaderColor('secondary_bg_color');
-        Telegram.WebApp.expand();
-        Telegram.WebApp.enableClosingConfirmation();
-        
-        // Hide the header
-        Telegram.WebApp.MainButton.hide();
-        Telegram.WebApp.BackButton.hide();
-        Telegram.WebApp.headerColor = '#1c1c1e';
         
         // Force expand the WebApp to full height
         Telegram.WebApp.expand();
