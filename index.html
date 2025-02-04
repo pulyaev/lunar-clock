@@ -474,74 +474,74 @@ function updateUI() {
     progressTextElement.querySelector('.days').textContent = `${formattedIntPart}.${decPart}`;
 }
 
-        async function fetchLunarData() {
-            if(state.isFetching || state.errorCount >= state.maxRetries) return;
-            state.isFetching = true;
-            state.hasApiError = false; // Reset error state before new attempt
+async function fetchLunarData() {
+    if(state.isFetching || state.errorCount >= state.maxRetries) return;
+    state.isFetching = true;
+    state.hasApiError = false; // Reset error state before new attempt
 
-            try {
-                const url = new URL(API_URL);
-                if(state.user_id) url.searchParams.set('user_id', state.user_id);
-                url.searchParams.set('lat', state.coords.lat);
-                url.searchParams.set('lon', state.coords.lon);
-                url.searchParams.set('currentTime', Date.now() / 1000 | 0);
+    try {
+        const url = new URL(API_URL);
+        if(state.user_id) url.searchParams.set('user_id', state.user_id);
+        url.searchParams.set('lat', state.coords.lat);
+        url.searchParams.set('lon', state.coords.lon);
+        url.searchParams.set('currentTime', Date.now() / 1000 | 0);
 
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                
-                // Обновляем базовые значения из API
-                if (data.BASE_LUNAR_SECONDS) DEFAULTS.BASE_LUNAR_SECONDS = data.BASE_LUNAR_SECONDS;
-                if (data.BASE_LUNAR_DAY_SECONDS) DEFAULTS.BASE_LUNAR_DAY_SECONDS = data.BASE_LUNAR_DAY_SECONDS;
-                if (data.BASE_SOLAR_DAY_SECONDS) DEFAULTS.BASE_SOLAR_DAY_SECONDS = data.BASE_SOLAR_DAY_SECONDS;
-                if (data.BASE_YEAR_SECONDS) DEFAULTS.BASE_YEAR_SECONDS = data.BASE_YEAR_SECONDS;
-                
-                state.lunarData = {
-                    ...DEFAULTS,
-                    ...data,
-                    FULL_TO_NEW_SECONDS: Math.min(data.FULL_TO_NEW_SECONDS, DEFAULTS.LUNAR_CYCLE_SECONDS)
-                };
-
-                state.solarData = {
-                    SOLAR_DAY_SECONDS: data.SOLAR_DAY_SECONDS || DEFAULTS.SOLAR_DAY_SECONDS,
-                    SUN_BELOW_HORIZON_SECONDS: data.SUN_BELOW_HORIZON_SECONDS || DEFAULTS.SUN_BELOW_HORIZON_SECONDS,
-                    SOLAR_CYCLE_SECONDS: data.SOLAR_CYCLE_SECONDS || SOLAR_YEAR_SECONDS,
-                    AUTUMN_TO_WINTER_SECONDS: data.AUTUMN_TO_WINTER_SECONDS || DEFAULTS.AUTUMN_TO_WINTER_SECONDS,
-                    SUMMER_TO_WINTER_SECONDS: data.SUMMER_TO_WINTER_SECONDS || DEFAULTS.SUMMER_TO_WINTER_SECONDS,
-                    SPRING_TO_WINTER_SECONDS: data.SPRING_TO_WINTER_SECONDS || DEFAULTS.SPRING_TO_WINTER_SECONDS
-                };
-
-                state.calendar_mode = data.CALENDAR_MODE || DEFAULT_CALENDAR_MODE;
-
-                state.timers = {
-                    seconds: state.calendar_mode === "solar" 
-                        ? (data.SOLAR_SECONDS || DEFAULTS.DEFAULT_SECONDS)
-                        : (data.LUNAR_DAY_REMAINING_SECONDS || DEFAULTS.DEFAULT_LUNAR_SECONDS),
-                    minutes: state.calendar_mode === "solar" 
-                        ? (data.SOLAR_MINUTES || DEFAULTS.DEFAULT_MINUTES)
-                        : (data.LUNAR_DAY_REMAINING_MINUTES || DEFAULTS.DEFAULT_LUNAR_MINUTES),
-                    hours: state.calendar_mode === "solar" 
-                        ? (data.SOLAR_HOURS || DEFAULTS.DEFAULT_HOURS)
-                        : (data.LUNAR_DAY_REMAINING_HOURS || DEFAULTS.DEFAULT_LUNAR_HOURS),
-                    allDayProgress: data.ALL_DAY_SECONDS || DEFAULTS.ALL_DAY_SECONDS,
-                    lunarCycleProgress: data.LUNAR_CYCLE_SECONDS || DEFAULTS.LUNAR_CYCLE_SECONDS
-                };
-
-                state.errorCount = 0;
-                state.hasApiError = false;
-            } catch(e) {
-                console.error('API Error:', e);
-                state.hasApiError = true;
-                if(++state.errorCount >= state.maxRetries) {
-                    revertToDefaultCoords();
-                }
-            } finally {
-                state.isFetching = false;
-                updateUI(); // Update UI to reflect error state
-            }
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        const data = await response.json();
+        
+        // Обновляем базовые значения из API
+        if (data.BASE_LUNAR_SECONDS) DEFAULTS.BASE_LUNAR_SECONDS = data.BASE_LUNAR_SECONDS;
+        if (data.BASE_LUNAR_DAY_SECONDS) DEFAULTS.BASE_LUNAR_DAY_SECONDS = data.BASE_LUNAR_DAY_SECONDS;
+        if (data.BASE_SOLAR_DAY_SECONDS) DEFAULTS.BASE_SOLAR_DAY_SECONDS = data.BASE_SOLAR_DAY_SECONDS;
+        if (data.BASE_YEAR_SECONDS) DEFAULTS.BASE_YEAR_SECONDS = data.BASE_YEAR_SECONDS;
+        
+        state.lunarData = {
+            ...DEFAULTS,
+            ...data,
+            FULL_TO_NEW_SECONDS: Math.min(data.FULL_TO_NEW_SECONDS, DEFAULTS.LUNAR_CYCLE_SECONDS)
+        };
+
+        state.solarData = {
+            SOLAR_DAY_SECONDS: data.SOLAR_DAY_SECONDS || DEFAULTS.SOLAR_DAY_SECONDS,
+            SUN_BELOW_HORIZON_SECONDS: data.SUN_BELOW_HORIZON_SECONDS || DEFAULTS.SUN_BELOW_HORIZON_SECONDS,
+            SOLAR_CYCLE_SECONDS: data.SOLAR_CYCLE_SECONDS || SOLAR_YEAR_SECONDS,
+            AUTUMN_TO_WINTER_SECONDS: data.AUTUMN_TO_WINTER_SECONDS || DEFAULTS.AUTUMN_TO_WINTER_SECONDS,
+            SUMMER_TO_WINTER_SECONDS: data.SUMMER_TO_WINTER_SECONDS || DEFAULTS.SUMMER_TO_WINTER_SECONDS,
+            SPRING_TO_WINTER_SECONDS: data.SPRING_TO_WINTER_SECONDS || DEFAULTS.SPRING_TO_WINTER_SECONDS
+        };
+
+        state.calendar_mode = data.CALENDAR_MODE || DEFAULT_CALENDAR_MODE;
+
+        state.timers = {
+            seconds: state.calendar_mode === "solar" 
+                ? (data.SOLAR_SECONDS ?? DEFAULTS.DEFAULT_SECONDS)
+                : (data.LUNAR_DAY_REMAINING_SECONDS ?? DEFAULTS.DEFAULT_LUNAR_SECONDS),
+            minutes: state.calendar_mode === "solar" 
+                ? (data.SOLAR_MINUTES ?? DEFAULTS.DEFAULT_MINUTES)
+                : (data.LUNAR_DAY_REMAINING_MINUTES ?? DEFAULTS.DEFAULT_LUNAR_MINUTES),
+            hours: state.calendar_mode === "solar" 
+                ? (data.SOLAR_HOURS ?? DEFAULTS.DEFAULT_HOURS)
+                : (data.LUNAR_DAY_REMAINING_HOURS ?? DEFAULTS.DEFAULT_LUNAR_HOURS),
+            allDayProgress: data.ALL_DAY_SECONDS || DEFAULTS.ALL_DAY_SECONDS,
+            lunarCycleProgress: data.LUNAR_CYCLE_SECONDS || DEFAULTS.LUNAR_CYCLE_SECONDS
+        };
+
+        state.errorCount = 0;
+        state.hasApiError = false;
+    } catch(e) {
+        console.error('API Error:', e);
+        state.hasApiError = true;
+        if(++state.errorCount >= state.maxRetries) {
+            revertToDefaultCoords();
+        }
+    } finally {
+        state.isFetching = false;
+        updateUI(); // Update UI to reflect error state
+    }
+}
 
         function revertToDefaultCoords() {
             state.coords = DEFAULT_COORDS;
