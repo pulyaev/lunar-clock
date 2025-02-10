@@ -278,7 +278,7 @@ const progressTextElement = document.querySelector('.progress-text');
            const modeToggle = document.getElementById('modeToggle');
 
         function updateModeToggle() {
-            modeToggle.textContent = state.calendar_mode === 'solar' ? '☀️' : '🌙';
+            modeToggle.textContent = state.calendar_mode === 'solar' ? '🌙' : '☀️';
         }
 
         modeToggle.addEventListener('click', async () => {
