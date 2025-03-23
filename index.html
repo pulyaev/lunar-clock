@@ -377,9 +377,10 @@ function createSeasonalProgressRing(radius) {
     const springToWinter = createProgressCircle(radius, 'spring-to-winter-progress', circumference);
 
     svg.appendChild(solarCycle);
-    svg.appendChild(springToWinter);
+    svg.appendChild(autumnToWinter);        
     svg.appendChild(summerToWinter);
-    svg.appendChild(autumnToWinter);
+    svg.appendChild(springToWinter);
+    
 
     addSeasonalDividers(svg, radius);
     document.querySelector('.container').appendChild(svg);
@@ -587,7 +588,7 @@ function updateUI() {
     rings.seasonal.summerToWinter.style.strokeDashoffset =
         rings.seasonal.circumference * (1 - summerToWinterProgress);
 
-    const springToWinterProgress = state.timers.springToWinterProgress / DEFAULTS.SPRING_TO_WINTER_SECONDS;
+    const springToWinterProgress = state.timers.springToWinterProgress / DEFAULTS.SOLAR_CYCLE_SECONDS;
     rings.seasonal.springToWinter.style.strokeDashoffset =
         rings.seasonal.circumference * (1 - springToWinterProgress);
 
