@@ -377,10 +377,9 @@ function createSeasonalProgressRing(radius) {
     const springToWinter = createProgressCircle(radius, 'spring-to-winter-progress', circumference);
 
     svg.appendChild(solarCycle);
-    svg.appendChild(autumnToWinter);        
-    svg.appendChild(summerToWinter);
     svg.appendChild(springToWinter);
-    
+    svg.appendChild(summerToWinter);
+    svg.appendChild(autumnToWinter);        
 
     addSeasonalDividers(svg, radius);
     document.querySelector('.container').appendChild(svg);
