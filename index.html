@@ -587,7 +587,7 @@ function updateUI() {
     rings.seasonal.summerToWinter.style.strokeDashoffset =
         rings.seasonal.circumference * (1 - summerToWinterProgress);
 
-    const springToWinterProgress = state.timers.springToWinterProgress / DEFAULTS.SOLAR_CYCLE_SECONDS;
+    const springToWinterProgress = state.timers.springToWinterProgress / DEFAULTS.SPRING_TO_WINTER_SECONDS;
     rings.seasonal.springToWinter.style.strokeDashoffset =
         rings.seasonal.circumference * (1 - springToWinterProgress);
 
